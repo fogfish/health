@@ -1,0 +1,15 @@
+{application, health,
+   [
+      {description, "health monitor"},
+      {vsn,         "0.0.0"},
+      {modules,     []},
+      {registered,  []},
+      {applications,[
+         kernel
+        ,stdlib
+        ,clue
+      ]},
+      {mod, {health_app, []}},
+      {env, []}
+   ]
+}.  
