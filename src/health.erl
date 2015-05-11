@@ -53,7 +53,7 @@ start() ->
 %%
 %%   * {supervise, t(), n(), s()} - evaluate safety margin every t() millisecond.
 %%     the sensor terminates itself, if it exceed failure frequency (more than n()
-%%     failure within s() seconds).
+%%     failure within s() seconds). 
 -spec(start_link/1 :: (spec()) -> {ok, pid()} | {error, any()}).
 
 start_link(Spec) ->
@@ -61,10 +61,10 @@ start_link(Spec) ->
 
 %%
 %% check health status
--spec(check/1 :: (any()) -> ok | not_available).
+-spec(check/1 :: (any()) -> ok | failed).
 
 check(Key) ->
    case ets:lookup(health, Key) of
-      []         -> not_available;
+      []         -> failed;
       [{_, Val}] -> Val
    end.

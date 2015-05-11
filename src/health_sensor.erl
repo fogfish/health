@@ -48,6 +48,7 @@ start_link(Spec) ->
 
 init([{Key, Safety, Strategy}]) ->
    erlang:send(self(), check),
+   ets:insert(health, {Key, ok}),
    {ok, active, 
       strategy(Strategy,
          #fsm{
@@ -77,7 +78,7 @@ active(check, _, #fsm{key = Key}=State0) ->
          {next_state,  active, timeout(State0)};
 
       false ->
-         ets:insert(health, {Key, not_available}),
+         ets:insert(health, {Key, failed}),
          case 
             is_failed(State0)
          of

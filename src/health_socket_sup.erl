@@ -18,7 +18,7 @@ start_link() ->
 init([]) -> 
    {ok,
       {
-         {simple_one_for_one, 4, 1800},
+         {simple_one_for_one, 1000, 1},
          [
             ?CHILD(worker, health_socket, [])
          ]

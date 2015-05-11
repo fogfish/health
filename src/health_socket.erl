@@ -106,8 +106,12 @@ ioctl(_, _State) ->
 
 request(Pckt, Sock, Stream0) ->
    case htstream:decode(Pckt, Stream0) of
-      {{'GET', <<$/, Key/binary>>, _}, Stream1} ->
+      {{'GET', <<"/check/", Key/binary>>, _}, Stream1} ->
          response(Sock, check_health(Key)),
+         {true, Stream1};
+
+      {{'GET', <<"/value/", Key/binary>>, _}, Stream1} ->
+         response(Sock, value_health(Key)),
          {true, Stream1};
 
       {{_, _, _}, Stream1} ->
@@ -121,6 +125,9 @@ request(Pckt, Sock, Stream0) ->
 check_health(Req) ->
    health:check(req_to_key(Req)).
 
+value_health(Req) ->
+   clue:get(req_to_key(Req)).
+
 req_to_key(Req) ->
    case binary:split(Req, <<$.>>, [global, trim]) of
       [Key] ->
@@ -129,18 +136,36 @@ req_to_key(Req) ->
          erlang:list_to_tuple([scalar:a(X) || X <- Key])
    end.
 
-response(Sock,   Code) ->
+response(Sock,   ok) ->
    {Http, _} = htstream:encode({
-      Code, 
+      ok, 
       [
          {'Connection',     <<"keep-alive">>},
          {'Content-Length',  0}
       ]
    }),
-   gen_tcp:send(Sock, Http).
+   gen_tcp:send(Sock, Http);
 
+response(Sock,   failed) ->
+   {Http, _} = htstream:encode({
+      not_available, 
+      [
+         {'Connection',     <<"keep-alive">>},
+         {'Content-Length',  0}
+      ]
+   }),
+   gen_tcp:send(Sock, Http);
 
-
-
-
+response(Sock,  Value) ->
+   Msg = scalar:s(Value), 
+   {Http1, Stream1} = htstream:encode({
+      ok, 
+      [
+         {'Connection',     <<"keep-alive">>},
+         {'Content-Length', byte_size(Msg)}
+      ]
+   }),
+   {Http2,_Stream2} = htstream:encode(Msg, Stream1),
+   gen_tcp:send(Sock, Http1),
+   gen_tcp:send(Sock, Http2).
 

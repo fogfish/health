@@ -23,9 +23,8 @@
 ]).
 
 start(_Type, _Args) ->
-   {ok, Sup} = health_sup:start_link(),
    health(),
-   {ok, Sup}.
+   health_sup:start_link().
 
 stop(_State) ->
    ok.
