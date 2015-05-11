@@ -47,7 +47,7 @@ start_link(Spec) ->
    pipe:start_link(?MODULE, [Spec], []).
 
 init([{Key, Safety, Strategy}]) ->
-   erlang:send_after(5000, self(), check),
+   erlang:send(self(), check),
    {ok, active, 
       strategy(Strategy,
          #fsm{
@@ -73,7 +73,11 @@ ioctl(_, _) ->
 %%
 active(check, _, #fsm{key = Key}=State0) ->
    case is_key_valid(State0) of
+      undefined ->
+         {next_state,  active, timeout(State0)};
+
       true  ->
+         ets:insert(health, {Key, ok}),
          {next_state,  active, timeout(State0)};
 
       false ->
@@ -95,11 +99,11 @@ active(_, _, State) ->
 %%
 broken(check, _, #fsm{key = Key}=State) ->
    case is_key_valid(State) of
-      true  ->
+      true ->
          ets:insert(health, {Key, ok}),
          {next_state,  active, timeout(State)};
 
-      false ->
+      _ ->
          {next_state, broken, timeout(State)}
    end;
 
@@ -147,7 +151,7 @@ is_failed(#fsm{failure = F, t = T, r = R} = State) ->
 is_key_valid(#fsm{key = Key, safety = {A, B}}) ->
    case clue:get(Key) of
       undefined ->
-         false;
+         undefined;
       X ->
          X >= A andalso X < B
    end;
@@ -155,7 +159,7 @@ is_key_valid(#fsm{key = Key, safety = {A, B}}) ->
 is_key_valid(#fsm{key = Key, safety = B}) ->
    case clue:get(Key) of
       undefined ->
-         false;
+         undefined;
       X ->
          X < B
    end.

@@ -136,19 +136,10 @@ req_to_key(Req) ->
          erlang:list_to_tuple([scalar:a(X) || X <- Key])
    end.
 
-response(Sock,   ok) ->
+response(Sock, Code)
+ when is_atom(Code) ->
    {Http, _} = htstream:encode({
-      ok, 
-      [
-         {'Connection',     <<"keep-alive">>},
-         {'Content-Length',  0}
-      ]
-   }),
-   gen_tcp:send(Sock, Http);
-
-response(Sock,   failed) ->
-   {Http, _} = htstream:encode({
-      not_available, 
+      http_code(Code), 
       [
          {'Connection',     <<"keep-alive">>},
          {'Content-Length',  0}
@@ -168,4 +159,12 @@ response(Sock,  Value) ->
    {Http2,_Stream2} = htstream:encode(Msg, Stream1),
    gen_tcp:send(Sock, Http1),
    gen_tcp:send(Sock, Http2).
+
+http_code(ok) ->
+   ok;
+http_code(failed) ->
+   not_available;
+http_code(undefined) ->
+   not_found.
+
 

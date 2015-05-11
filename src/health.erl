@@ -61,10 +61,10 @@ start_link(Spec) ->
 
 %%
 %% check health status
--spec(check/1 :: (any()) -> ok | failed).
+-spec(check/1 :: (any()) -> ok | failed | undefined).
 
 check(Key) ->
    case ets:lookup(health, Key) of
-      []         -> failed;
+      []         -> undefined;
       [{_, Val}] -> Val
    end.
