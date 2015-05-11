@@ -47,8 +47,7 @@ start_link(Spec) ->
    pipe:start_link(?MODULE, [Spec], []).
 
 init([{Key, Safety, Strategy}]) ->
-   erlang:send(self(), check),
-   ets:insert(health, {Key, ok}),
+   erlang:send_after(5000, self(), check),
    {ok, active, 
       strategy(Strategy,
          #fsm{
