@@ -21,6 +21,7 @@
 -export([start/0]).
 -export([
    start_link/1,
+   new/1,
    check/1
 ]).
 
@@ -40,8 +41,8 @@ start() ->
 %%
 %% start health sensor process.   
 %%
-%% the sensor process is responsible for poll and monitoring a key from 
-%% system status repository. The sensor will break is key's value do not met
+%% the sensor process is responsible for poll and monitor a key from 
+%% system status repository. The sensor will break if key's value do not met
 %% safety conditions. 
 %%
 %% Each sensor is defined via sensor specification:
@@ -54,10 +55,25 @@ start() ->
 %%   * {supervise, t(), n(), s()} - evaluate safety margin every t() millisecond.
 %%     the sensor terminates itself, if it exceed failure frequency (more than n()
 %%     failure within s() seconds). 
+%%
+%% Each application can uses health:start_link(...) sensors within its own supervisors to
+%% handle resource failure. Alternatively, sensors can be installed into health application
+%% using config file or explicitly via new function:
+%%    {health, [
+%%       {sensors, [
+%%          ...
+%%       ]}
+%%    ]}   
 -spec(start_link/1 :: (spec()) -> {ok, pid()} | {error, any()}).
 
 start_link(Spec) ->
    health_sensor:start_link(Spec).
+
+
+-spec(new/1 :: (spec()) -> {ok, pid()} | {error, any()}).
+
+new(Spec) ->
+   supervisor:start_child(health_sensor_sup, [Spec]).
 
 %%
 %% check health status

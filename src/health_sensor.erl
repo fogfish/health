@@ -131,7 +131,7 @@ timeout(#fsm{freq = Freq} = State) ->
    State.
 
 %%
-%%  check if sensor is permanently failed
+%% check if sensor is permanently failed
 is_failed(#fsm{t = undefined} = State) ->
    {false, State};
 
