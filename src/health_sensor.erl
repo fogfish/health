@@ -148,19 +148,27 @@ is_failed(#fsm{failure = F, t = T, r = R} = State) ->
 
 %%
 %% check sensor key 
-is_key_valid(#fsm{key = Key, safety = {A, B}}) ->
+is_key_valid(#fsm{key = Key, safety = {'<', A}}) ->
    case clue:get(Key) of
       undefined ->
          undefined;
       X ->
-         X >= A andalso X < B
+         X < A
    end;
 
-is_key_valid(#fsm{key = Key, safety = B}) ->
+is_key_valid(#fsm{key = Key, safety = {'>', A}}) ->
    case clue:get(Key) of
       undefined ->
          undefined;
       X ->
-         X < B
+         X > A
+   end;
+
+is_key_valid(#fsm{key = Key, safety = {'=', A}}) ->
+   case clue:get(Key) of
+      undefined ->
+         undefined;
+      X ->
+         X =:= A
    end.
 
