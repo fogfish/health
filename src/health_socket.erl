@@ -114,6 +114,10 @@ request(Pckt, Sock, Stream0) ->
          response(Sock, value_health(Key)),
          {true, Stream1};
 
+      {{'GET', _, _}, Stream1} ->
+         response(Sock),
+         {true, Stream1};
+
       {{_, _, _}, Stream1} ->
          response(badarg, Sock),
          {false, Stream1};
@@ -159,6 +163,21 @@ response(Sock,  Value) ->
    {Http2,_Stream2} = htstream:encode(Msg, Stream1),
    gen_tcp:send(Sock, Http1),
    gen_tcp:send(Sock, Http2).
+
+response(Sock) ->
+   Msg = <<"/check/:key - health check\r\n/value/:key - immediate value\r\n">>,
+   {Http1, Stream1} = htstream:encode({
+      ok, 
+      [
+         {'Connection',     <<"keep-alive">>},
+         {'Content-Length', byte_size(Msg)}
+      ]
+   }),
+   {Http2,_Stream2} = htstream:encode(Msg, Stream1),
+   gen_tcp:send(Sock, Http1),
+   gen_tcp:send(Sock, Http2).
+
+
 
 http_code(ok) ->
    ok;
