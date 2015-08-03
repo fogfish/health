@@ -29,6 +29,7 @@
 ]).
 
 -record(fsm, {
+   mod     = undefined :: any(),      %% functor to use
    key     = undefined :: any(),      %% key to poll
    safety  = undefined :: float(),    %% expected safety range
    freq    = undefined :: integer(),  %% frequency to poll value
@@ -47,15 +48,18 @@ start_link(Spec) ->
    pipe:start_link(?MODULE, [Spec], []).
 
 init([{Key, Safety, Strategy}]) ->
+   erlang:process_flag(priority, low),
    erlang:send(self(), check),
    {ok, active, 
       strategy(Strategy,
          #fsm{
+            mod    = handler(Key),
             key    = Key,
             safety = Safety
          }
       )
    }.
+
 
 free(_, _) ->
    ok.
@@ -71,22 +75,22 @@ ioctl(_, _) ->
 
 %%
 %%
-active(check, _, #fsm{key = Key}=State0) ->
+active(check, _, #fsm{mod = Mod, key = Key}=State0) ->
    case is_key_valid(State0) of
       undefined ->
          {next_state,  active, timeout(State0)};
 
       true  ->
-         ets:insert(health, {Key, ok}),
+         update(State0, ok),
          {next_state,  active, timeout(State0)};
 
       false ->
-         ets:insert(health, {Key, failed}),
+         update(State0, failed),
          case 
             is_failed(State0)
          of
             {true,  State1} ->
-               {stop, {unhealth, Key, clue:get(Key)}, State1};
+               {stop, {unhealth, Key, Mod:get(Key)}, State1};
             {false, State1} ->
                {next_state, broken, timeout(State1)}
          end
@@ -97,11 +101,11 @@ active(_, _, State) ->
 
 %%
 %%
-broken(check, _, #fsm{key = Key}=State) ->
+broken(check, _, State) ->
    case is_key_valid(State) of
       true ->
-         ets:insert(health, {Key, ok}),
-         {next_state,  active, timeout(State)};
+         update(State, ok),
+         {next_state, active, timeout(State)};
 
       _ ->
          {next_state, broken, timeout(State)}
@@ -115,6 +119,23 @@ broken(_, _, State) ->
 %%% private
 %%%
 %%%----------------------------------------------------------------------------   
+
+%%
+%% re-write custom module
+handler(Key)
+ when is_tuple(Key) ->
+   case erlang:element(1, Key) of
+      sys ->
+         health_sys;
+
+      mod ->
+         erlang:element(2, Key);
+      _   ->
+         clue
+   end;
+
+handler(_) ->
+   clue.
 
 %%
 %% define sensor strategy
@@ -148,27 +169,36 @@ is_failed(#fsm{failure = F, t = T, r = R} = State) ->
 
 %%
 %% check sensor key 
-is_key_valid(#fsm{key = Key, safety = {'<', A}}) ->
-   case clue:get(Key) of
+is_key_valid(#fsm{mod = Mod, key = Key, safety = {'<', A}}) ->
+   case Mod:get(Key) of
       undefined ->
          undefined;
       X ->
          X < A
    end;
 
-is_key_valid(#fsm{key = Key, safety = {'>', A}}) ->
-   case clue:get(Key) of
+is_key_valid(#fsm{mod = Mod, key = Key, safety = {'>', A}}) ->
+   case Mod:get(Key) of
       undefined ->
          undefined;
       X ->
          X > A
    end;
 
-is_key_valid(#fsm{key = Key, safety = {'=', A}}) ->
-   case clue:get(Key) of
+is_key_valid(#fsm{mod = Mod, key = Key, safety = {'=', A}}) ->
+   case Mod:get(Key) of
       undefined ->
          undefined;
       X ->
          X =:= A
    end.
 
+%%
+%% update system status
+update(#fsm{mod = clue, key = Key}, Val) ->
+   ets:insert(health, {Key, Val});
+
+update(#fsm{key = Key}, Val) ->
+   ets:insert(health, {Key, Val}).
+
+   

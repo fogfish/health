@@ -15,7 +15,7 @@
 %%   limitations under the License.
 %%
 %% @description
-%%   health monitor application 
+%%   health monitor application
 -module(health).
 
 -export([start/0]).
@@ -60,6 +60,7 @@ start() ->
 %% Each application can uses health:start_link(...) sensors within its own supervisors to
 %% handle resource failure. Alternatively, sensors can be installed into health application
 %% using config file or explicitly via new function:
+%%
 %%    {health, [
 %%       {sensors, [
 %%          ...
