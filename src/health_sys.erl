@@ -18,10 +18,9 @@
 %%   system health monitor
 -module(health_sys).
 
--export([get/1]).
+-export([nodes/1]).
 
 %%
-%% return system health status
-get({sys, nodes}) ->
-   % return number of known nodes
+%% return number of connected nodes
+nodes(_) ->
    length(erlang:nodes()).

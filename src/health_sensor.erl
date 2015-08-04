@@ -126,16 +126,17 @@ handler(Key)
  when is_tuple(Key) ->
    case erlang:element(1, Key) of
       sys ->
-         health_sys;
+         {health_sys, erlang:element(2, Key)};
 
-      mod ->
-         erlang:element(2, Key);
+      app ->
+         {erlang:element(2, Key), erlang:element(3, Key)};
+
       _   ->
-         clue
+         {clue, get}
    end;
 
 handler(_) ->
-   clue.
+   {clue, get}.
 
 %%
 %% define sensor strategy
@@ -169,24 +170,24 @@ is_failed(#fsm{failure = F, t = T, r = R} = State) ->
 
 %%
 %% check sensor key 
-is_key_valid(#fsm{mod = Mod, key = Key, safety = {'<', A}}) ->
-   case Mod:get(Key) of
+is_key_valid(#fsm{mod = {Mod, Fun}, key = Key, safety = {'<', A}}) ->
+   case Mod:Fun(Key) of
       undefined ->
          undefined;
       X ->
          X < A
    end;
 
-is_key_valid(#fsm{mod = Mod, key = Key, safety = {'>', A}}) ->
-   case Mod:get(Key) of
+is_key_valid(#fsm{mod = {Mod, Fun}, key = Key, safety = {'>', A}}) ->
+   case Mod:Fun(Key) of
       undefined ->
          undefined;
       X ->
          X > A
    end;
 
-is_key_valid(#fsm{mod = Mod, key = Key, safety = {'=', A}}) ->
-   case Mod:get(Key) of
+is_key_valid(#fsm{mod = {Mod, Fun}, key = Key, safety = {'=', A}}) ->
+   case Mod:Fun(Key) of
       undefined ->
          undefined;
       X ->
@@ -195,7 +196,7 @@ is_key_valid(#fsm{mod = Mod, key = Key, safety = {'=', A}}) ->
 
 %%
 %% update system status
-update(#fsm{mod = clue, key = Key}, Val) ->
+update(#fsm{mod = {clue, _}, key = Key}, Val) ->
    ets:insert(health, {Key, Val});
 
 update(#fsm{key = Key}, Val) ->
