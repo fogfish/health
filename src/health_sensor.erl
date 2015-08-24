@@ -170,29 +170,23 @@ is_failed(#fsm{failure = F, t = T, r = R} = State) ->
 
 %%
 %% check sensor key 
-is_key_valid(#fsm{mod = {Mod, Fun}, key = Key, safety = {'<', A}}) ->
-   case Mod:Fun(Key) of
-      undefined ->
-         undefined;
-      X ->
-         X < A
-   end;
+is_key_valid(#fsm{mod = {Mod, Fun}, key = Key, safety = {Op, A}}) ->
+   valid(Op, A, Mod:Fun(Key)).
 
-is_key_valid(#fsm{mod = {Mod, Fun}, key = Key, safety = {'>', A}}) ->
-   case Mod:Fun(Key) of
-      undefined ->
-         undefined;
-      X ->
-         X > A
-   end;
-
-is_key_valid(#fsm{mod = {Mod, Fun}, key = Key, safety = {'=', A}}) ->
-   case Mod:Fun(Key) of
-      undefined ->
-         undefined;
-      X ->
-         X =:= A
-   end.
+valid(_, _, undefined) ->
+   undefined;
+valid('=', A, X) ->
+   X =:= A;
+valid('=:=', A, X) ->
+   X =:= A;
+valid('>', A, X) ->
+   X > A;
+valid('>=', A, X) ->
+   X >= A;
+valid('<', A, X) ->
+   X < A;
+valid('=<', A, X) ->
+   X =< A.
 
 %%
 %% update system status
