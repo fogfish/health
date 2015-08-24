@@ -29,7 +29,7 @@
 %%
 run() ->
    health:start(),
-   {ok, _} = health:start_link({test, 1, {check, 500}}),
+   {ok, _} = health:start_link({test, {'=:=', 1}, {check, 500}}),
    clue:put(test, 0),
    case timer:tc(fun() -> run(?N) end) of
       {T, ok} ->

@@ -36,7 +36,6 @@ health() ->
       public
      ,named_table 
      ,set 
-     ,{write_concurrency, true}
      ,{read_concurrency,  true}
    ]).
 

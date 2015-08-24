@@ -30,7 +30,7 @@
 -type(t()        :: integer()).
 -type(n()        :: integer()).
 -type(s()        :: integer()).
--type(ops()      :: '>' | '<' | '=').
+-type(ops()      :: '>' | '<' | '=' | '=:=' | '>=' | '=<' ).
 -type(strategy() :: {check, t()} | {supervise, t(), n(), s()}).
 -type(spec()     :: {key(), safety(), strategy()}).
 
