@@ -31,7 +31,7 @@
 -type(n()        :: integer()).
 -type(s()        :: integer()).
 -type(ops()      :: '>' | '<' | '=' | '=:=' | '>=' | '=<' ).
--type(strategy() :: {check, t()} | {supervise, t(), n(), s()}).
+-type(strategy() :: {check, t()} | {supervise, t(), n(), s()} | {lens, t(), _}).
 -type(spec()     :: {key(), safety(), strategy()}).
 
 %%
@@ -56,6 +56,8 @@ start() ->
 %%   * {supervise, t(), n(), s()} - evaluate safety margin every t() millisecond.
 %%     the sensor terminates itself, if it exceed failure frequency (more than n()
 %%     failure within s() seconds). 
+%% 
+%%   * {lens, t(), _} - focus the sensor to value and apply custom function
 %%
 %% Each application can uses health:start_link(...) sensors within its own supervisors to
 %% handle resource failure. Alternatively, sensors can be installed into health application

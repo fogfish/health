@@ -53,7 +53,7 @@ init([{Key, Safety, Strategy}]) ->
    {ok, active, 
       strategy(Strategy,
          #fsm{
-            mod    = handler(Key),
+            mod    = handler(Strategy, Key),
             key    = Key,
             safety = Safety
          }
@@ -122,7 +122,10 @@ broken(_, _, State) ->
 
 %%
 %% re-write custom module
-handler(Key)
+handler({lens, _, Fun}, _Key) ->
+   {health_lens, focus, Fun};
+
+handler(_, Key)
  when is_tuple(Key) ->
    case erlang:element(1, Key) of
       sys ->
@@ -135,7 +138,7 @@ handler(Key)
          {clue, get}
    end;
 
-handler(_) ->
+handler(_, _) ->
    {clue, get}.
 
 %%
@@ -144,7 +147,11 @@ strategy({check, T}, State) ->
    State#fsm{freq = T};
 
 strategy({supervise, T, MaxR, MaxT}, State) ->
-   State#fsm{freq = T, r = MaxR, t = MaxT}.
+   State#fsm{freq = T, r = MaxR, t = MaxT};
+
+strategy({lens, T, _}, State) ->
+   State#fsm{freq = T}.
+
 
 %%
 %%
@@ -171,7 +178,9 @@ is_failed(#fsm{failure = F, t = T, r = R} = State) ->
 %%
 %% check sensor key 
 is_key_valid(#fsm{mod = {Mod, Fun}, key = Key, safety = {Op, A}}) ->
-   valid(Op, A, Mod:Fun(Key)).
+   valid(Op, A, Mod:Fun(Key));
+is_key_valid(#fsm{mod = {Mod, Fun, Fa}, key = Key, safety = {Op, A}}) ->
+   valid(Op, A, Mod:Fun(Fa, Key)).
 
 valid(_, _, undefined) ->
    undefined;
