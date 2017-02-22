@@ -68,23 +68,24 @@ start() ->
 %%          ...
 %%       ]}
 %%    ]}   
--spec(start_link/1 :: (spec()) -> {ok, pid()} | {error, any()}).
+-spec start_link(spec()) -> {ok, pid()} | {error, any()}.
 
 start_link(Spec) ->
    health_sensor:start_link(Spec).
 
 
--spec(new/1 :: (spec()) -> {ok, pid()} | {error, any()}).
+-spec new(spec()) -> {ok, pid()} | {error, any()}.
 
 new(Spec) ->
    supervisor:start_child(health_sensor_sup, [Spec]).
 
 %%
 %% check health status
--spec(check/1 :: (any()) -> ok | failed | undefined).
+-spec check(any()) -> ok | failed | undefined.
 
 check(Key) ->
    case ets:lookup(health, Key) of
       []         -> undefined;
       [{_, Val}] -> Val
    end.
+
