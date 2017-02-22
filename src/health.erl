@@ -22,7 +22,8 @@
 -export([
    start_link/1,
    new/1,
-   check/1
+   check/1,
+   break/1
 ]).
 
 -type(key()      :: any()).
@@ -81,11 +82,19 @@ new(Spec) ->
 
 %%
 %% check health status
--spec check(any()) -> ok | failed | undefined.
+-spec check(_) -> ok | failed | undefined.
 
 check(Key) ->
    case ets:lookup(health, Key) of
       []         -> undefined;
       [{_, Val}] -> Val
    end.
+
+%%
+%% explicitly fail health check
+-spec break(_) -> ok.
+
+break(Key) ->
+   pipe:call(pns:whereis(health, Key), break).
+
 

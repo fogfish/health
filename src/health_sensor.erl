@@ -25,6 +25,7 @@
    free/2,
    ioctl/2,
    active/3,
+   halfed/3,
    broken/3
 ]).
 
@@ -35,7 +36,8 @@
    freq    = undefined :: integer(),  %% frequency to poll value
    r       = undefined :: integer(),  %% max failures (r) occurs within (t) seconds
    t       = undefined :: integer(),  %% 
-   failure = []        :: list()      %% log of recent failures 
+   failure = []        :: list(),     %% log of recent failures
+   timer   = undefined :: _
 }).
 
 %%%----------------------------------------------------------------------------   
@@ -48,6 +50,7 @@ start_link(Spec) ->
    pipe:start_link(?MODULE, [Spec], []).
 
 init([{Key, Safety, Strategy}]) ->
+   pns:register(health, Key, self()),
    erlang:process_flag(priority, low),
    erlang:send(self(), check),
    {ok, active, 
@@ -96,8 +99,41 @@ active(check, _, #fsm{mod = Mod, key = Key}=State0) ->
          end
    end;
 
+active(break, Pipe, #fsm{mod = Mod, key = Key}=State0) ->
+   update(State0, failed),
+   pipe:ack(Pipe, ok),
+   case 
+      is_failed(State0)
+   of
+      {true,  State1} ->
+         {stop, {unhealth, Key, Mod:get(Key)}, State1};
+      {false, State1} ->
+         {next_state, broken, timeout(State1)}
+   end;
+   
 active(_, _, State) ->
    {next_state, broken, State}.
+
+%%
+%%
+halfed(check, _, State) ->
+   case is_key_valid(State) of
+      true ->
+         update(State, ok),
+         {next_state, active, timeout(State)};
+
+      _ ->
+         update(State, failed),
+         {next_state, broken, timeout(State)}
+   end;
+
+halfed(break, Pipe, State) ->
+   update(State, failed),
+   pipe:ack(Pipe, ok),
+   {next_state, broken, timeout(State)};
+
+halfed(_, _, State) ->
+   {next_state, halfed, State}.
 
 %%
 %%
@@ -108,8 +144,13 @@ broken(check, _, State) ->
          {next_state, active, timeout(State)};
 
       _ ->
-         {next_state, broken, timeout(State)}
+         update(State, ok),
+         {next_state, halfed, timeout(State)}
    end;
+
+broken(break, Pipe, State) ->
+   pipe:ack(Pipe, ok),
+   {next_state, broken, timeout(State)};
 
 broken(_, _, State) ->
    {next_state, broken, State}.
@@ -155,9 +196,16 @@ strategy({lens, T, _}, State) ->
 
 %%
 %%
-timeout(#fsm{freq = Freq} = State) ->
-   erlang:send_after(Freq, self(), check),
-   State.
+timeout(#fsm{freq = Freq, timer = undefined} = State) ->
+   State#fsm{
+      timer = erlang:send_after(Freq, self(), check)
+   };
+timeout(#fsm{freq = Freq, timer = Tref} = State) ->
+   erlang:cancel_timer(Tref),
+   receive check -> ok after 0 -> ok end,
+   State#fsm{
+      timer = erlang:send_after(Freq, self(), check)
+   }.
 
 %%
 %% check if sensor is permanently failed
