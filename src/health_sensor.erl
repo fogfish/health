@@ -25,7 +25,6 @@
    free/2,
    ioctl/2,
    active/3,
-   halfed/3,
    broken/3
 ]).
 
@@ -114,39 +113,12 @@ active(break, Pipe, #fsm{mod = Mod, key = Key}=State0) ->
 active(_, _, State) ->
    {next_state, broken, State}.
 
-%%
-%%
-halfed(check, _, State) ->
-   case is_key_valid(State) of
-      true ->
-         update(State, ok),
-         {next_state, active, timeout(State)};
-
-      _ ->
-         update(State, failed),
-         {next_state, broken, timeout(State)}
-   end;
-
-halfed(break, Pipe, State) ->
-   update(State, failed),
-   pipe:ack(Pipe, ok),
-   {next_state, broken, timeout(State)};
-
-halfed(_, _, State) ->
-   {next_state, halfed, State}.
 
 %%
 %%
 broken(check, _, State) ->
-   case is_key_valid(State) of
-      true ->
-         update(State, ok),
-         {next_state, active, timeout(State)};
-
-      _ ->
-         update(State, ok),
-         {next_state, halfed, timeout(State)}
-   end;
+   update(State, ok),
+   {next_state, active, timeout(State)};
 
 broken(break, Pipe, State) ->
    pipe:ack(Pipe, ok),
