@@ -26,14 +26,14 @@
    break/1
 ]).
 
--type(key()      :: any()).
--type(safety()   :: {ops(), number()}).
--type(t()        :: integer()).
--type(n()        :: integer()).
--type(s()        :: integer()).
--type(ops()      :: '>' | '<' | '=' | '=:=' | '>=' | '=<' ).
--type(strategy() :: {check, t()} | {supervise, t(), n(), s()} | {lens, t(), _}).
--type(spec()     :: {key(), safety(), strategy()}).
+-type key()      :: any().
+-type safety()   :: {ops(), number()} | is.
+-type t()        :: integer().
+-type n()        :: integer().
+-type s()        :: integer().
+-type ops()      :: gt | lt | eq | ne | ge | le.
+-type strategy() :: {check, t()} | {supervise, t(), n(), s()} | {lens, t(), _}.
+-type spec()     :: {key(), safety(), strategy()}.
 
 %%
 %%
