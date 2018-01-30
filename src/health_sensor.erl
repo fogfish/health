@@ -117,8 +117,17 @@ active(_, _, State) ->
 %%
 %%
 broken(check, _, State) ->
-   update(State, ok),
-   {next_state, active, timeout(State)};
+   case is_key_valid(State) of
+      undefined ->
+         {next_state,  broken, timeout(State)};
+
+      true  ->
+         update(State, ok),
+         {next_state,  broken, timeout(State)};
+
+      false ->
+         {next_state,  broken, timeout(State)}
+   end;
 
 broken(break, Pipe, State) ->
    pipe:ack(Pipe, ok),
